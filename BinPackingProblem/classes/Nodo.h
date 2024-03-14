@@ -15,15 +15,13 @@ public:
 	int Length;
 	int CodigoDoItem;
 	TipoDeNodo Type;
+	TipoOrientacao Orientation;
 	vector<Nodo> Children;
 
 public:
 	Nodo(int height, int length);
-	Nodo(int height, int length, vector<Nodo> children);
+	Nodo(int height, int length, TipoOrientacao orientation, vector<Nodo> children);
 	Nodo(int height, int length, int codigoDoItem);
-	void criaItem(int height, int length, int codigoDoItem);
-	void criaEstrutura(int height, int length, vector<Nodo> children);
-	void criaSobra(int height, int length);
 };
 
 #endif
