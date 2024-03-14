@@ -34,64 +34,7 @@ void converteDeJsonParaObjeto(Json::Value dadosDoJson, bool ehConversaoDeItem)
 	}
 }
 
-void AdicionaItemNoMesmoNivelParaCortesIguaisEmSequencia(Nodo novoFilho, Nodo& raiz, int indexDoResto)
-{
-	int sobraDoCorteHorizontal = (raiz.Height - novoFilho.Height) * raiz.Length; // ---
-	int sobraDoCorteVertical = (raiz.Length - novoFilho.Length) * raiz.Height; // |
-
-	TipoOrientacao orientacaoDoPrimeiroCorte
-		= sobraDoCorteHorizontal > sobraDoCorteVertical
-		? TipoOrientacao::H : TipoOrientacao::V;
-
-	if (novoFilho.Height < raiz.Height && novoFilho.Height < raiz.Height) //CORTE 2 NIVEIS
-	{
-		Nodo segundoResto(0, 0);
-
-		int alturaDoSegundoResto, larguraDoSegundoResto;
-
-		if (orientacaoDoPrimeiroCorte == TipoOrientacao::H) // resto verdadeiro
-		{
-			raiz.Children[indexDoResto].Height -= novoFilho.Height;
-
-			segundoResto.Height = alturaDoSegundoResto = novoFilho.Height;
-			segundoResto.Length = larguraDoSegundoResto = raiz.Length;
-			segundoResto.Length -= novoFilho.Length;
-
-		}
-		else
-		{
-			raiz.Children[indexDoResto].Length -= novoFilho.Length;
-
-			segundoResto.Height = alturaDoSegundoResto = raiz.Height;
-			segundoResto.Length = larguraDoSegundoResto = novoFilho.Length;
-			segundoResto.Height -= novoFilho.Height;
-		}
-
-		vector<Nodo> children2;
-
-		children2.push_back(novoFilho);
-		children2.push_back(segundoResto);
-
-		TipoOrientacao orientacaoDoSegundoCorte = orientacaoDoPrimeiroCorte == TipoOrientacao::H ? TipoOrientacao::V : TipoOrientacao::H;
-
-		Nodo segundoCorte(alturaDoSegundoResto, larguraDoSegundoResto, orientacaoDoSegundoCorte, children2);
-
-		raiz.Children.push_back(segundoCorte);
-	}
-	else
-	{
-		if (orientacaoDoPrimeiroCorte == TipoOrientacao::H)
-			raiz.Children[indexDoResto].Height -= novoFilho.Height;
-		else
-			raiz.Children[indexDoResto].Length -= novoFilho.Length;
-
-		raiz.Children.push_back(novoFilho);
-	}
-}
-
-
-
-bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual)
+bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual, Nodo& raizAnterior)
 {
 	if (raizAtual.Children.empty() && raizAtual.Type == TipoDeNodo::Leftover) {//adiciona item
 		if (novoFilho.Height <= raizAtual.Height && novoFilho.Length <= raizAtual.Length)//item cabe
@@ -109,9 +52,6 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual)
 
 				TipoOrientacao orientacaoDoPrimeiroCorte = primeiroCorteEhHorizontal ? TipoOrientacao::H : TipoOrientacao::V;
 				TipoOrientacao orientacaoDoSegundoCorte = primeiroCorteEhHorizontal ? TipoOrientacao::V : TipoOrientacao::H;
-
-				if (raizAtual.Orientation == orientacaoDoPrimeiroCorte)
-					return 2;
 
 				Nodo segundoResto(0, 0);
 
@@ -142,12 +82,20 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual)
 
 				Nodo segundoCorte(alturaDoSegundoResto, larguraDoSegundoResto, orientacaoDoSegundoCorte, children2);
 
+				if (raizAnterior.Orientation == orientacaoDoPrimeiroCorte) //caso tenha 2 cortes iguais em sequencia, apenas ajusta o tamanho do resto e adiciona filho na lista.
+				{
+					raizAnterior.Children.push_back(segundoCorte);
+					return true;
+				}
+
 				children.push_back(segundoCorte);
 				children.push_back(raizAtual);
 
 				Nodo novaRaiz(alturaDaRaiz, larguraDaRaiz, orientacaoDoPrimeiroCorte, children);
 
 				raizAtual = novaRaiz;
+
+				return true;
 			}
 
 			else //corte 1 nivel
@@ -156,13 +104,16 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual)
 					= sobraDoCorteHorizontal > sobraDoCorteVertical
 					? TipoOrientacao::H : TipoOrientacao::V;
 
-				if (raizAtual.Orientation == orientacao)
-					return 2;
-
 				if (orientacao == TipoOrientacao::H)
 					raizAtual.Height -= novoFilho.Height;
 				else
 					raizAtual.Length -= novoFilho.Length;
+
+				if (raizAnterior.Orientation == orientacao) //caso tenha 2 cortes iguais em sequencia, apenas ajusta o tamanho do resto e adiciona filho na lista.
+				{
+					raizAnterior.Children.push_back(novoFilho);
+					return true;
+				}
 
 				vector<Nodo> children;
 
@@ -173,28 +124,20 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual)
 
 				raizAtual = novaRaiz;
 
+				return true;
 			}
-			return 1;
 		}
-		return 0;
+		return false;
 	}
 	else
 	{
 		for (int i = 0; i < raizAtual.Children.size(); i++) 
 		{
-			int resultado = AdicionaItem(novoFilho, raizAtual.Children[i]);
-
-			if (resultado == 1) return 1;
-
-			else if (resultado == 2) 
-			{
-				AdicionaItemNoMesmoNivelParaCortesIguaisEmSequencia(novoFilho, raizAtual, i);
-				return 1;
-			}
+			if (AdicionaItem(novoFilho, raizAtual.Children[i], raizAtual)) return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
 void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
@@ -217,7 +160,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 
 		for (int i = 0; i < Arvores.size(); i++)
 		{
-			if (AdicionaItem(novoFilho, Arvores[i])) {
+			if (AdicionaItem(novoFilho, Arvores[i], Arvores[i])) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
 				adicionou = true;
 				break;
@@ -228,7 +171,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 		{
 			Nodo novaArvore(alturaDoRecipiente, larguraDoRecipiente);
 
-			if (AdicionaItem(novoFilho, novaArvore))
+			if (AdicionaItem(novoFilho, novaArvore, novaArvore))
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
 
 			Arvores.push_back(novaArvore);
