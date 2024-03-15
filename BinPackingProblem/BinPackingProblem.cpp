@@ -45,7 +45,7 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual, Nodo& raizAnterior)
 			int alturaDaRaiz = raizAtual.Height;
 			int larguraDaRaiz = raizAtual.Length;
 
-			if (novoFilho.Height < raizAtual.Height && novoFilho.Height < raizAtual.Height)  //CORTE 2 NIVEIS
+			if (novoFilho.Height < raizAtual.Height && novoFilho.Length < raizAtual.Length)  //CORTE 2 NIVEIS
 			{
 
 				bool primeiroCorteEhHorizontal = sobraDoCorteHorizontal > sobraDoCorteVertical;
@@ -108,6 +108,12 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual, Nodo& raizAnterior)
 					raizAtual.Height -= novoFilho.Height;
 				else
 					raizAtual.Length -= novoFilho.Length;
+
+				if (raizAtual.Height == 0 || raizAtual.Length == 0)
+				{
+					raizAtual = novoFilho;
+					return true;
+				}
 
 				if (raizAnterior.Orientation == orientacao) //caso tenha 2 cortes iguais em sequencia, apenas ajusta o tamanho do resto e adiciona filho na lista.
 				{
