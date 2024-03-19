@@ -186,6 +186,79 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 	}
 }
 
+void AjustaArvoreAposARemocao(Nodo& raizAnterior) 
+{
+	int numeroDeRestos = 0, numeroDeNaoRestos = 0;
+	for (int i = 0; i < raizAnterior.Children.size(); i++) 
+	{
+		switch (raizAnterior.Children[i].Type)
+		{
+			case TipoDeNodo::Leftover:
+				numeroDeRestos++;
+				break;
+			default:
+				numeroDeNaoRestos++;
+				break;
+		}
+	}
+
+	if (numeroDeRestos == 1) //resto que acabei de transformar
+		return;
+
+	if (numeroDeRestos == 2 and numeroDeNaoRestos >= 1) //soma restos e tranforma em apenas 1
+	{
+		bool ehOPrimeiroResto = true;
+		int indiceDoPrimeiroResto;
+		Nodo primeiroResto(0,0), segundoResto(0,0);
+
+		for (int i = 0; i < raizAnterior.Children.size(); i++)
+		{
+			if (raizAnterior.Children[i].Type == TipoDeNodo::Leftover) 
+			{	
+				if (ehOPrimeiroResto)
+				{
+					primeiroResto = raizAnterior.Children[i];
+					indiceDoPrimeiroResto = i;
+
+					ehOPrimeiroResto = false;
+				}
+				else 
+				{
+					if (raizAnterior.Orientation == TipoOrientacao::H)
+						raizAnterior.Children[i].Height += primeiroResto.Height;
+					else
+						raizAnterior.Children[i].Length += primeiroResto.Length;
+
+					raizAnterior.Children.erase(raizAnterior.Children.begin() + indiceDoPrimeiroResto); //remove primeiro resto
+					return;
+				}
+			}
+		}
+	}
+
+	raizAnterior.TransformaEmResto();
+
+}
+
+bool RemoveItem(int codigoDoItem, Nodo& raizAtual, Nodo &raizAnterior) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
+{
+	if (raizAtual.Children.empty() && raizAtual.CodigoDoItem == codigoDoItem)
+	{
+		raizAtual.TransformaEmResto();
+
+		AjustaArvoreAposARemocao(raizAnterior);
+
+		return true;
+	}
+	else 
+	{
+		for (int i = 0; i < raizAtual.Children.size(); i++)
+		{
+			if (RemoveItem(codigoDoItem, raizAtual.Children[i], raizAtual)) return true;
+		}
+	}
+		return false;
+}
 int main()
 {
 	srand(time(NULL));
@@ -201,6 +274,8 @@ int main()
 	vector<Item> itensFaltantes = Itens;
 
 	GerenciaProcessoDeAdicaoDeItens(itensFaltantes);
+
+	RemoveItem(3,Arvores[4], Arvores[4]);
 
 	return 0;
 }

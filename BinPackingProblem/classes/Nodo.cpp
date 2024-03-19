@@ -19,3 +19,10 @@ Nodo::Nodo(int height, int length, int codigoDoItem)
 {
 	this->Type = TipoDeNodo::Item;
 }
+
+void Nodo:: TransformaEmResto() {
+	this->Type = TipoDeNodo::Leftover;
+	this->Orientation = TipoOrientacao::NULO;
+	this->CodigoDoItem = -1;
+	this->Children.clear();
+}
