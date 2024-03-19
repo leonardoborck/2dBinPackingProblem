@@ -240,13 +240,11 @@ void AjustaArvoreAposARemocao(Nodo& raizAnterior)
 
 }
 
-bool RemoveItem(int codigoDoItem, Nodo& raizAtual, Nodo &raizAnterior) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
+bool RemoveItem(int codigoDoItem, Nodo& raizAtual) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
 {
 	if (raizAtual.Children.empty() && raizAtual.CodigoDoItem == codigoDoItem)
 	{
 		raizAtual.TransformaEmResto();
-
-		AjustaArvoreAposARemocao(raizAnterior);
 
 		return true;
 	}
@@ -254,7 +252,10 @@ bool RemoveItem(int codigoDoItem, Nodo& raizAtual, Nodo &raizAnterior) //fazer r
 	{
 		for (int i = 0; i < raizAtual.Children.size(); i++)
 		{
-			if (RemoveItem(codigoDoItem, raizAtual.Children[i], raizAtual)) return true;
+			if (RemoveItem(codigoDoItem, raizAtual.Children[i])) {
+				AjustaArvoreAposARemocao(raizAtual);
+				return true;
+			}
 		}
 	}
 		return false;
@@ -275,7 +276,7 @@ int main()
 
 	GerenciaProcessoDeAdicaoDeItens(itensFaltantes);
 
-	RemoveItem(3,Arvores[4], Arvores[4]);
+	RemoveItem(3,Arvores[4]);
 
 	return 0;
 }
