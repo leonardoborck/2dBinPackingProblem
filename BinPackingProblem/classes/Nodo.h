@@ -22,6 +22,7 @@ public:
 	Nodo(int height, int length);
 	Nodo(int height, int length, TipoOrientacao orientation, vector<Nodo> children);
 	Nodo(int height, int length, int codigoDoItem);
+	void TransformaEmResto();
 };
 
 #endif
