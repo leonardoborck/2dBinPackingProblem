@@ -34,9 +34,11 @@ void converteDeJsonParaObjeto(Json::Value dadosDoJson, bool ehConversaoDeItem)
 	}
 }
 
-bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual, Nodo& raizAnterior)
+bool AdicionaItem(Item itemEscolhido, Nodo& raizAtual, Nodo& raizAnterior)
 {
 	if (raizAtual.Children.empty() && raizAtual.Type == TipoDeNodo::Leftover) {//adiciona item
+		Nodo novoFilho(itemEscolhido.Height, itemEscolhido.Length, itemEscolhido.Reference);
+
 		if (novoFilho.Height <= raizAtual.Height && novoFilho.Length <= raizAtual.Length)//item cabe
 		{
 			int sobraDoCorteHorizontal = (raizAtual.Height - novoFilho.Height) * raizAtual.Length; // ---
@@ -137,14 +139,22 @@ bool AdicionaItem(Nodo novoFilho, Nodo& raizAtual, Nodo& raizAnterior)
 	}
 	else
 	{
-		for (int i = 0; i < raizAtual.Children.size(); i++) 
+		for (int i = 0; i < raizAtual.Children.size(); i++)
 		{
-			if (AdicionaItem(novoFilho, raizAtual.Children[i], raizAtual)) return true;
+			if (AdicionaItem(itemEscolhido, raizAtual.Children[i], raizAtual)) return true;
 		}
 	}
 
 	return false;
 }
+
+void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, int indexDaArvore = -1)
+{
+	for (int i = 0; i < Itens.size(); i++)
+		if (Itens[i].Reference == codigoDoItem)
+			Itens[i].IndexDaArvore = indexDaArvore;
+}
+
 
 void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 {
@@ -160,15 +170,14 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 
 		Item itemEscolhido = itensFaltantes[indexDoItem];
 
-		Nodo novoFilho(itemEscolhido.Height, itemEscolhido.Length, itemEscolhido.Reference);
-
 		bool adicionou = false;
 
 		for (int i = 0; i < Arvores.size(); i++)
 		{
-			if (AdicionaItem(novoFilho, Arvores[i], Arvores[i])) {
+			if (AdicionaItem(itemEscolhido, Arvores[i], Arvores[i])) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
 				adicionou = true;
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, i);
 				break;
 			}
 		}
@@ -177,8 +186,10 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 		{
 			Nodo novaArvore(alturaDoRecipiente, larguraDoRecipiente);
 
-			if (AdicionaItem(novoFilho, novaArvore, novaArvore))
+			if (AdicionaItem(itemEscolhido, novaArvore, novaArvore)) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, Arvores.size());
+			}
 
 			Arvores.push_back(novaArvore);
 		}
@@ -186,79 +197,160 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 	}
 }
 
-void AjustaArvoreAposARemocao(Nodo& raizAnterior) 
+void AjustaArvoreAposARemocao(Nodo& raiz)
 {
 	int numeroDeRestos = 0, numeroDeNaoRestos = 0;
-	for (int i = 0; i < raizAnterior.Children.size(); i++) 
+	for (int i = 0; i < raiz.Children.size(); i++)
 	{
-		switch (raizAnterior.Children[i].Type)
+		switch (raiz.Children[i].Type)
 		{
-			case TipoDeNodo::Leftover:
-				numeroDeRestos++;
-				break;
-			default:
-				numeroDeNaoRestos++;
-				break;
+		case TipoDeNodo::Leftover:
+			numeroDeRestos++;
+			break;
+		default:
+			numeroDeNaoRestos++;
+			break;
 		}
 	}
 
-	if (numeroDeRestos == 1) //resto que acabei de transformar
+	if (numeroDeRestos <= 1) //resto que acabei de transformar
 		return;
 
-	if (numeroDeRestos == 2 and numeroDeNaoRestos >= 1) //soma restos e tranforma em apenas 1
+	if (numeroDeRestos == 2 && numeroDeNaoRestos >= 1) //soma restos e tranforma em apenas 1
 	{
 		bool ehOPrimeiroResto = true;
 		int indiceDoPrimeiroResto;
-		Nodo primeiroResto(0,0), segundoResto(0,0);
+		Nodo primeiroResto(0, 0), segundoResto(0, 0);
 
-		for (int i = 0; i < raizAnterior.Children.size(); i++)
+		for (int i = 0; i < raiz.Children.size(); i++)
 		{
-			if (raizAnterior.Children[i].Type == TipoDeNodo::Leftover) 
-			{	
+			if (raiz.Children[i].Type == TipoDeNodo::Leftover)
+			{
 				if (ehOPrimeiroResto)
 				{
-					primeiroResto = raizAnterior.Children[i];
+					primeiroResto = raiz.Children[i];
 					indiceDoPrimeiroResto = i;
 
 					ehOPrimeiroResto = false;
 				}
-				else 
+				else
 				{
-					if (raizAnterior.Orientation == TipoOrientacao::H)
-						raizAnterior.Children[i].Height += primeiroResto.Height;
+					if (raiz.Orientation == TipoOrientacao::H)
+						raiz.Children[i].Height += primeiroResto.Height;
 					else
-						raizAnterior.Children[i].Length += primeiroResto.Length;
+						raiz.Children[i].Length += primeiroResto.Length;
 
-					raizAnterior.Children.erase(raizAnterior.Children.begin() + indiceDoPrimeiroResto); //remove primeiro resto
+					raiz.Children.erase(raiz.Children.begin() + indiceDoPrimeiroResto); //remove primeiro resto
 					return;
 				}
 			}
 		}
 	}
 
-	raizAnterior.TransformaEmResto();
+	raiz.TransformaEmResto();
 
 }
 
-bool RemoveItem(int codigoDoItem, Nodo& raizAtual, Nodo &raizAnterior) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
+bool RemoveItem(int codigoDoItem, Nodo& raizAtual) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
 {
 	if (raizAtual.Children.empty() && raizAtual.CodigoDoItem == codigoDoItem)
 	{
+		AjustaIndexDaArvoreNoItemAdicionado(raizAtual.CodigoDoItem);
 		raizAtual.TransformaEmResto();
-
-		AjustaArvoreAposARemocao(raizAnterior);
 
 		return true;
 	}
-	else 
+	else
 	{
 		for (int i = 0; i < raizAtual.Children.size(); i++)
 		{
-			if (RemoveItem(codigoDoItem, raizAtual.Children[i], raizAtual)) return true;
+			if (RemoveItem(codigoDoItem, raizAtual.Children[i])) {
+				AjustaArvoreAposARemocao(raizAtual);
+				return true;
+			}
 		}
 	}
-		return false;
+	return false;
 }
+
+
+bool ItemShuffle()
+{
+	//Escolher 2 Arvores e 1 Item em cada Arvore
+	int indexDoPrimeiroItem = rand() % Itens.size();
+	int indexDoSegundoItem;
+	do
+	{
+		indexDoSegundoItem = rand() % Itens.size();
+	} while (Itens[indexDoPrimeiroItem].IndexDaArvore == Itens[indexDoSegundoItem].IndexDaArvore);
+
+	//TROCA DE ARVORE
+	Item primeiroItem = Itens[indexDoPrimeiroItem], segundoItem = Itens[indexDoSegundoItem];
+
+	int indexDaPrimeiraArvore = primeiroItem.IndexDaArvore;
+	int indexDaSegundaArvore = segundoItem.IndexDaArvore;
+
+	Nodo primeiraRaiz = Arvores[indexDaPrimeiraArvore];
+    Nodo segundaRaiz = Arvores[indexDaSegundaArvore];
+
+	RemoveItem(primeiroItem.Reference, primeiraRaiz);
+	RemoveItem(segundoItem.Reference, segundaRaiz);
+
+	bool deuCerto1 = AdicionaItem(primeiroItem, segundaRaiz, segundaRaiz);
+	bool deuCerto2 = AdicionaItem(segundoItem, primeiraRaiz, primeiraRaiz);
+
+	if (deuCerto1 && deuCerto2) 
+	{
+		//FALTA VERIFICAR SE HOUVE MELHORA
+		Arvores[indexDaPrimeiraArvore] = primeiraRaiz;
+		Arvores[indexDaSegundaArvore] = segundaRaiz;
+
+		Itens[indexDoPrimeiroItem].IndexDaArvore = indexDaSegundaArvore;
+		Itens[indexDoSegundoItem].IndexDaArvore = indexDaPrimeiraArvore;
+		return true;
+	}
+
+	Itens[indexDoPrimeiroItem].IndexDaArvore = indexDaPrimeiraArvore;
+	Itens[indexDoSegundoItem].IndexDaArvore = indexDaSegundaArvore;
+	return false;
+}
+
+void Heuristica()
+{
+	int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
+
+	/*switch (operacao)
+	{
+	case 0:
+		ItemShuffle();
+		break;
+	case 1:
+		break;
+	case 2:
+		break;
+	}*/
+	int max = 0;
+	int iteracoes = 0;
+	while (1 == 1) 
+	{
+		int cont = 0;
+
+		while (cont < 500) {
+
+			bool safe = ItemShuffle();
+			if (safe)
+				break;
+			cont++;
+			iteracoes++;
+		}
+
+		if (cont > max) {
+			max = cont;
+		}
+		cout << "Max: " << max << "\t iteracoes:" << iteracoes << "\tcont:" << cont << endl;
+	}
+}
+
 int main()
 {
 	srand(time(NULL));
@@ -275,7 +367,9 @@ int main()
 
 	GerenciaProcessoDeAdicaoDeItens(itensFaltantes);
 
-	RemoveItem(3,Arvores[4], Arvores[4]);
+	//RemoveItem(3,Arvores[4]);
+
+	Heuristica();
 
 	return 0;
 }
