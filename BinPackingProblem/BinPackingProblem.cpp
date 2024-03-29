@@ -1,6 +1,10 @@
 #include <iostream>
 #include <json/json.h>
 #include <fstream>
+#include <math.h>
+
+//mede tempo de execucao
+#include<chrono> 
 
 //rand
 #include <stdlib.h>
@@ -274,6 +278,57 @@ bool RemoveItem(int codigoDoItem, Nodo& raizAtual) //fazer remoção em 2 etapas, 
 }
 
 
+int VerificaUtilizacaoDaArvore(Nodo raizAtual)
+{
+	if (raizAtual.Type == TipoDeNodo::Item)
+	{
+		return raizAtual.Height * raizAtual.Length;
+	}
+	else
+	{
+		int valor = 0;
+		for (int i = 0; i < raizAtual.Children.size(); i++)
+		{
+			valor += VerificaUtilizacaoDaArvore(raizAtual.Children[i]);
+		}
+
+		return valor;
+	}
+}
+
+double AvaliaSolucao(vector<Nodo> arvores, int k)
+{
+	double somaDaUtilizacaoDasArvores = 0;
+	for (Nodo arvore : arvores)
+	{
+		double utilizacao = pow((double)VerificaUtilizacaoDaArvore(arvore) / (arvore.Height * arvore.Length), k);
+		somaDaUtilizacaoDasArvores += utilizacao;
+	}
+
+	return somaDaUtilizacaoDasArvores / arvores.size();
+}
+
+void AdicionaItemAEsquerda(vector<Nodo>& arvoresLocal, Item item, int& indexDaArvoreEmQueOItemFoiAdicionado)
+{
+	bool adicionou = false;
+	for (int i = 0; i < arvoresLocal.size(); i++)
+	{
+		if (AdicionaItem(item, arvoresLocal[i], arvoresLocal[i])) {
+			adicionou = true;
+			indexDaArvoreEmQueOItemFoiAdicionado = i;
+			break;
+		}
+	}
+
+	if (!adicionou)
+	{
+		Nodo novaArvore(10, 10);
+		AdicionaItem(item, novaArvore, novaArvore);
+		arvoresLocal.push_back(novaArvore);
+		indexDaArvoreEmQueOItemFoiAdicionado = arvoresLocal.size() - 1;
+	}
+}
+
 bool ItemShuffle()
 {
 	//Escolher 2 Arvores e 1 Item em cada Arvore
@@ -290,23 +345,27 @@ bool ItemShuffle()
 	int indexDaPrimeiraArvore = primeiroItem.IndexDaArvore;
 	int indexDaSegundaArvore = segundoItem.IndexDaArvore;
 
-	Nodo primeiraRaiz = Arvores[indexDaPrimeiraArvore];
-    Nodo segundaRaiz = Arvores[indexDaSegundaArvore];
+	vector<Nodo> arvoresLocal(Arvores);
 
-	RemoveItem(primeiroItem.Reference, primeiraRaiz);
-	RemoveItem(segundoItem.Reference, segundaRaiz);
+	RemoveItem(primeiroItem.Reference, arvoresLocal[indexDaPrimeiraArvore]);
+	RemoveItem(segundoItem.Reference, arvoresLocal[indexDaSegundaArvore]);
 
-	bool deuCerto1 = AdicionaItem(primeiroItem, segundaRaiz, segundaRaiz);
-	bool deuCerto2 = AdicionaItem(segundoItem, primeiraRaiz, primeiraRaiz);
+	bool deuCerto1 = AdicionaItem(primeiroItem, arvoresLocal[indexDaSegundaArvore], arvoresLocal[indexDaSegundaArvore]);
+	bool deuCerto2 = AdicionaItem(segundoItem, arvoresLocal[indexDaPrimeiraArvore], arvoresLocal[indexDaPrimeiraArvore]);
 
-	if (deuCerto1 && deuCerto2) 
+
+	int indexAux1 = indexDaPrimeiraArvore, indexAux2 = indexDaSegundaArvore;
+	if (!deuCerto1) AdicionaItemAEsquerda(arvoresLocal, primeiroItem, indexAux2);
+	if (!deuCerto2) AdicionaItemAEsquerda(arvoresLocal, segundoItem, indexAux1);
+
+	double valor1 = AvaliaSolucao(Arvores, 2);
+	double valor2 = AvaliaSolucao(arvoresLocal, 2);
+
+	if (valor1 < valor2)
 	{
-		//FALTA VERIFICAR SE HOUVE MELHORA
-		Arvores[indexDaPrimeiraArvore] = primeiraRaiz;
-		Arvores[indexDaSegundaArvore] = segundaRaiz;
-
-		Itens[indexDoPrimeiroItem].IndexDaArvore = indexDaSegundaArvore;
-		Itens[indexDoSegundoItem].IndexDaArvore = indexDaPrimeiraArvore;
+		Itens[indexDoPrimeiroItem].IndexDaArvore = indexAux2;
+		Itens[indexDoSegundoItem].IndexDaArvore = indexAux1;
+		Arvores = arvoresLocal;
 		return true;
 	}
 
@@ -315,42 +374,59 @@ bool ItemShuffle()
 	return false;
 }
 
-void Heuristica()
+void Heuristica(int numeroDeIteracoes)
 {
-	int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
+	int cont = 0;
+	while (cont < numeroDeIteracoes) {
+		int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
+		bool safe = false;
 
-	/*switch (operacao)
-	{
-	case 0:
-		ItemShuffle();
-		break;
-	case 1:
-		break;
-	case 2:
-		break;
-	}*/
-	int max = 0;
-	int iteracoes = 0;
-	while (1 == 1) 
-	{
-		int cont = 0;
-
-		while (cont < 500) {
-
-			bool safe = ItemShuffle();
-			if (safe)
-				break;
+		switch (operacao)
+		{
+		case 0:
+			safe = ItemShuffle();
+			break;
+		case 1:
+			safe = ItemShuffle();
+			break;
+		case 2:
+			safe = ItemShuffle();
+			break;
+		}
+		if (!safe)
 			cont++;
-			iteracoes++;
-		}
-
-		if (cont > max) {
-			max = cont;
-		}
-		cout << "Max: " << max << "\t iteracoes:" << iteracoes << "\tcont:" << cont << endl;
+		//cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << "\t cont:" << cont << endl;
 	}
 }
 
+//PRA DEBUGAR
+//vector<int> itensRep;
+//void VerificaSeTemItensRepetidos(Nodo raizAtual)
+//{
+//	if (raizAtual.Type == TipoDeNodo::Item)
+//	{
+//		itensRep.push_back(raizAtual.CodigoDoItem);
+//	}
+//	else
+//	{
+//		int valor = 0;
+//		for (int i = 0; i < raizAtual.Children.size(); i++)
+//		{
+//			VerificaSeTemItensRepetidos(raizAtual.Children[i]);
+//		}
+//
+//	}
+//}
+//
+//void Checa(vector<Nodo>arvores) 
+//{
+//	for (Nodo arvore : arvores)
+//	{
+//		VerificaSeTemItensRepetidos(arvore);
+//	}
+//}
+
+#include <algorithm>
 int main()
 {
 	srand(time(NULL));
@@ -366,10 +442,17 @@ int main()
 	vector<Item> itensFaltantes = Itens;
 
 	GerenciaProcessoDeAdicaoDeItens(itensFaltantes);
+	cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << endl;
 
-	//RemoveItem(3,Arvores[4]);
+	//avalia o tempo da heuristica
+	auto start = chrono::steady_clock::now();
+	Heuristica(300);
+	auto end = chrono::steady_clock::now();
+	auto elapsed = end - start;
 
-	Heuristica();
+	cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << endl;
+
+	cout << ((double)elapsed.count()/ 1000000000) << "s\n";
 
 	return 0;
 }
