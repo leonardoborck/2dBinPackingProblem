@@ -152,11 +152,11 @@ bool AdicionaItem(Item itemEscolhido, Nodo& raizAtual, Nodo& raizAnterior)
 	return false;
 }
 
-void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, int indexDaArvore = -1)
+void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, vector<Item> &itens, int indexDaArvore = -1)
 {
-	for (int i = 0; i < Itens.size(); i++)
-		if (Itens[i].Reference == codigoDoItem)
-			Itens[i].IndexDaArvore = indexDaArvore;
+	for (int i = 0; i < itens.size(); i++)
+		if (itens[i].Reference == codigoDoItem)
+			itens[i].IndexDaArvore = indexDaArvore;
 }
 
 
@@ -170,7 +170,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 
 	while (!itensFaltantes.empty())
 	{
-		int indexDoItem = itensFaltantes.size() != 1 ? rand() % (itensFaltantes.size() - 1) : 0;
+		int indexDoItem = rand() % itensFaltantes.size();
 
 		Item itemEscolhido = itensFaltantes[indexDoItem];
 
@@ -181,7 +181,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 			if (AdicionaItem(itemEscolhido, Arvores[i], Arvores[i])) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
 				adicionou = true;
-				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, i);
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, Itens ,i);
 				break;
 			}
 		}
@@ -192,7 +192,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes)
 
 			if (AdicionaItem(itemEscolhido, novaArvore, novaArvore)) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
-				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, Arvores.size());
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, Itens ,Arvores.size());
 			}
 
 			Arvores.push_back(novaArvore);
@@ -255,11 +255,11 @@ void AjustaArvoreAposARemocao(Nodo& raiz)
 
 }
 
-bool RemoveItem(int codigoDoItem, Nodo& raizAtual) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
+bool RemoveItem(int codigoDoItem, Nodo& raizAtual, vector<Item> &itens) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
 {
 	if (raizAtual.Children.empty() && raizAtual.CodigoDoItem == codigoDoItem)
 	{
-		AjustaIndexDaArvoreNoItemAdicionado(raizAtual.CodigoDoItem);
+		AjustaIndexDaArvoreNoItemAdicionado(raizAtual.CodigoDoItem, itens);
 		raizAtual.TransformaEmResto();
 
 		return true;
@@ -268,7 +268,7 @@ bool RemoveItem(int codigoDoItem, Nodo& raizAtual) //fazer remoção em 2 etapas, 
 	{
 		for (int i = 0; i < raizAtual.Children.size(); i++)
 		{
-			if (RemoveItem(codigoDoItem, raizAtual.Children[i])) {
+			if (RemoveItem(codigoDoItem, raizAtual.Children[i], itens)) {
 				AjustaArvoreAposARemocao(raizAtual);
 				return true;
 			}
@@ -347,8 +347,8 @@ bool ItemShuffle()
 
 	vector<Nodo> arvoresLocal(Arvores);
 
-	RemoveItem(primeiroItem.Reference, arvoresLocal[indexDaPrimeiraArvore]);
-	RemoveItem(segundoItem.Reference, arvoresLocal[indexDaSegundaArvore]);
+	RemoveItem(primeiroItem.Reference, arvoresLocal[indexDaPrimeiraArvore], Itens);
+	RemoveItem(segundoItem.Reference, arvoresLocal[indexDaSegundaArvore], Itens);
 
 	bool deuCerto1 = AdicionaItem(primeiroItem, arvoresLocal[indexDaSegundaArvore], arvoresLocal[indexDaSegundaArvore]);
 	bool deuCerto2 = AdicionaItem(segundoItem, arvoresLocal[indexDaPrimeiraArvore], arvoresLocal[indexDaPrimeiraArvore]);
@@ -358,10 +358,10 @@ bool ItemShuffle()
 	if (!deuCerto1) AdicionaItemAEsquerda(arvoresLocal, primeiroItem, indexAux2);
 	if (!deuCerto2) AdicionaItemAEsquerda(arvoresLocal, segundoItem, indexAux1);
 
-	double valor1 = AvaliaSolucao(Arvores, 2);
-	double valor2 = AvaliaSolucao(arvoresLocal, 2);
+	double solucaoAtual = AvaliaSolucao(Arvores, 2);
+	double novaSolucao = AvaliaSolucao(arvoresLocal, 2);
 
-	if (valor1 < valor2)
+	if (solucaoAtual < novaSolucao)
 	{
 		Itens[indexDoPrimeiroItem].IndexDaArvore = indexAux2;
 		Itens[indexDoSegundoItem].IndexDaArvore = indexAux1;
@@ -371,6 +371,82 @@ bool ItemShuffle()
 
 	Itens[indexDoPrimeiroItem].IndexDaArvore = indexDaPrimeiraArvore;
 	Itens[indexDoSegundoItem].IndexDaArvore = indexDaSegundaArvore;
+	return false;
+}
+
+
+void ObtemAPosicaoDosItensEmUmaArvore(Nodo raiz, vector<int> &posicaoDosItens) 
+{
+	if (raiz.Type == TipoDeNodo::Item)
+	{
+		for (int i = 0; i < Itens.size(); i++) 
+		{
+			if(Itens[i].Reference == raiz.CodigoDoItem)
+				posicaoDosItens.push_back(i);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < raiz.Children.size(); i++)
+		{
+			ObtemAPosicaoDosItensEmUmaArvore(raiz.Children[i], posicaoDosItens);
+		}
+	}
+}
+
+void AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(Item itemParaAdicionar, Nodo &arvore, vector<Nodo> &arvoresLocal, int &indexDaArvoreEmQueOItemFoiAdicionado) {
+
+	bool deuCerto = AdicionaItem(itemParaAdicionar, arvore, arvore);
+
+	if (deuCerto) return;
+
+	AdicionaItemAEsquerda(arvoresLocal, itemParaAdicionar, indexDaArvoreEmQueOItemFoiAdicionado);
+}
+
+void RemoveArvoresVaziasDaLista(vector<Nodo>& arvoresLocal, int indexDaArvore) {
+	if (arvoresLocal[indexDaArvore].Type == TipoDeNodo::Leftover)
+		arvoresLocal.erase(arvoresLocal.begin() + indexDaArvore);
+}
+
+bool BinShake() 
+{
+	vector<Nodo> arvoresLocal(Arvores);
+	vector<Item> itensLocal(Itens);
+
+	//salvar todos os itens q estão na arvore em uma lista 
+	int indexDaArvore = rand() % Arvores.size();
+
+	vector<int> posicoesDosItensDaArvore;
+	ObtemAPosicaoDosItensEmUmaArvore(arvoresLocal[indexDaArvore], posicoesDosItensDaArvore);
+
+	for (int posicaoDoItem : posicoesDosItensDaArvore)
+		RemoveItem(itensLocal[posicaoDoItem].Reference, arvoresLocal[indexDaArvore], itensLocal);
+
+	while (!posicoesDosItensDaArvore.empty())
+	{
+		int indexDaArvoreAdicionada = indexDaArvore;
+
+		int indexDaListaDePosicoes = rand() % posicoesDosItensDaArvore.size();
+
+		int indexDoItemEscolhido = posicoesDosItensDaArvore[indexDaListaDePosicoes];
+
+		AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(itensLocal[indexDoItemEscolhido], arvoresLocal[indexDaArvoreAdicionada], arvoresLocal, indexDaArvoreAdicionada);
+
+		posicoesDosItensDaArvore.erase(posicoesDosItensDaArvore.begin() + indexDaListaDePosicoes);
+
+		itensLocal[indexDoItemEscolhido].IndexDaArvore = indexDaArvoreAdicionada;
+	}
+	
+	double solucaoAtual = AvaliaSolucao(Arvores, 2);
+	double novaSolucao = AvaliaSolucao(arvoresLocal, 2);
+
+	if (solucaoAtual < novaSolucao)
+	{
+		Arvores = arvoresLocal;
+		Itens = itensLocal;
+		return true;
+	}
+
 	return false;
 }
 
@@ -387,7 +463,7 @@ void Heuristica(int numeroDeIteracoes)
 			safe = ItemShuffle();
 			break;
 		case 1:
-			safe = ItemShuffle();
+			safe = BinShake();
 			break;
 		case 2:
 			safe = ItemShuffle();
