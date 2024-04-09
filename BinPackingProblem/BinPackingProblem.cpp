@@ -22,13 +22,19 @@ vector<Nodo> Arvores;
 
 void converteDeJsonParaObjeto(Json::Value dadosDoJson, bool ehConversaoDeItem)
 {
+	int codigoDoItem = 1;
 	for (int i = 0; i < dadosDoJson.size(); i++) {
 		Json::Value objeto = dadosDoJson[i];
 
 		if (ehConversaoDeItem)
 		{
-			Item novoItem(objeto["Height"].asInt64(), objeto["Length"].asInt64(), objeto["Demand"].asInt64(), objeto["Value"].asInt64(), objeto["Reference"].asInt64());
-			Itens.push_back(novoItem);
+			int demand = objeto["Demand"].asInt64();
+			for (int i = 0; i < demand; i++) 
+			{
+				Item novoItem(objeto["Height"].asInt64(), objeto["Length"].asInt64(), demand, objeto["Value"].asInt64(), codigoDoItem);
+				Itens.push_back(novoItem);
+				codigoDoItem++;
+			}
 		}
 		else
 		{
@@ -339,7 +345,7 @@ void AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(Item itemParaAdicionar
 	AdicionaItemAEsquerda(arvoresLocal, itemParaAdicionar, indexDaArvoreEmQueOItemFoiAdicionado);
 }
 
-bool ItemShuffle()
+void ItemShuffle(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
 	//Escolher 2 Arvores e 1 Item em cada Arvore
 	int indexDoPrimeiroItem = rand() % Itens.size();
@@ -355,36 +361,15 @@ bool ItemShuffle()
 	int indexDaPrimeiraArvore = primeiroItem.IndexDaArvore;
 	int indexDaSegundaArvore = segundoItem.IndexDaArvore;
 
-	vector<Nodo> arvoresLocal(Arvores);
+	RemoveItem(primeiroItem.Reference, arvoresLocal[indexDaPrimeiraArvore], itensLocal);
+	RemoveItem(segundoItem.Reference, arvoresLocal[indexDaSegundaArvore], itensLocal);
 
-	RemoveItem(primeiroItem.Reference, arvoresLocal[indexDaPrimeiraArvore], Itens);
-	RemoveItem(segundoItem.Reference, arvoresLocal[indexDaSegundaArvore], Itens);
+	int indexDaArvoreAdicionada1 = indexDaPrimeiraArvore, indexDaArvoreAdicionada2 = indexDaSegundaArvore;
+	AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(primeiroItem, arvoresLocal[indexDaSegundaArvore], arvoresLocal, indexDaArvoreAdicionada2);
+	AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(segundoItem, arvoresLocal[indexDaPrimeiraArvore], arvoresLocal, indexDaArvoreAdicionada1);
 
-	/*bool deuCerto1 = AdicionaItem(primeiroItem, arvoresLocal[indexDaSegundaArvore], arvoresLocal[indexDaSegundaArvore]);
-	bool deuCerto2 = AdicionaItem(segundoItem, arvoresLocal[indexDaPrimeiraArvore], arvoresLocal[indexDaPrimeiraArvore]);
-
-
-	if (!deuCerto1) AdicionaItemAEsquerda(arvoresLocal, primeiroItem, indexAux2);
-	if (!deuCerto2) AdicionaItemAEsquerda(arvoresLocal, segundoItem, indexAux1);*/
-
-	int indexAux1 = indexDaPrimeiraArvore, indexAux2 = indexDaSegundaArvore;
-	AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(primeiroItem, arvoresLocal[indexDaSegundaArvore], arvoresLocal, indexAux2);
-	AdicionaItemNaArvoreECasoNaoConsigaAdicionaAEsquerda(segundoItem, arvoresLocal[indexDaPrimeiraArvore], arvoresLocal, indexAux1);
-
-	double solucaoAtual = AvaliaSolucao(Arvores, 2);
-	double novaSolucao = AvaliaSolucao(arvoresLocal, 2);
-
-	if (solucaoAtual < novaSolucao)
-	{
-		Itens[indexDoPrimeiroItem].IndexDaArvore = indexAux2;
-		Itens[indexDoSegundoItem].IndexDaArvore = indexAux1;
-		Arvores = arvoresLocal;
-		return true;
-	}
-
-	Itens[indexDoPrimeiroItem].IndexDaArvore = indexDaPrimeiraArvore;
-	Itens[indexDoSegundoItem].IndexDaArvore = indexDaSegundaArvore;
-	return false;
+	itensLocal[indexDoPrimeiroItem].IndexDaArvore = indexDaArvoreAdicionada2;
+	itensLocal[indexDoSegundoItem].IndexDaArvore = indexDaArvoreAdicionada1;
 }
 
 
@@ -412,11 +397,8 @@ void RemoveArvoresVaziasDaLista(vector<Nodo>& arvoresLocal, int indexDaArvore) {
 		arvoresLocal.erase(arvoresLocal.begin() + indexDaArvore);
 }
 
-bool BinShake() 
+void BinShake(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
-	vector<Nodo> arvoresLocal(Arvores);
-	vector<Item> itensLocal(Itens);
-
 	//salvar todos os itens q estão na arvore em uma lista 
 	int indexDaArvore = rand() % Arvores.size();
 
@@ -440,21 +422,9 @@ bool BinShake()
 
 		itensLocal[indexDoItemEscolhido].IndexDaArvore = indexDaArvoreAdicionada;
 	}
-	
-	double solucaoAtual = AvaliaSolucao(Arvores, 2);
-	double novaSolucao = AvaliaSolucao(arvoresLocal, 2);
-
-	if (solucaoAtual < novaSolucao)
-	{
-		Arvores = arvoresLocal;
-		Itens = itensLocal;
-		return true;
-	}
-
-	return false;
 }
 
-bool BinDelete() 
+void BinDelete() 
 {
 	//escolher um recipiente para remover os itens e realocar todos eles em outros..
 	int indexDoRecipienteParaRemover;
@@ -463,7 +433,6 @@ bool BinDelete()
 	//gerenciaAdicaoDeItens
 
 	//checa se houve melhora.
-	return false;
 }
 
 bool Existe(vector<Item> itensParaAlterar, Item novoItem) 
@@ -476,7 +445,7 @@ bool Existe(vector<Item> itensParaAlterar, Item novoItem)
 	return false;
 }
 
-bool Perturbacao(double porcentagemDePerturbacao) 
+void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double porcentagemDePerturbacao) 
 {
 	int totalDeItens = Itens.size();
 
@@ -492,10 +461,6 @@ bool Perturbacao(double porcentagemDePerturbacao)
 
 		itensParaAlterar.push_back(Itens[indexDoItemParaAlterar]);
 	}
-
-	//cria espelho da lista de arvores para verificar se houve melhora ou não;
-	vector<Nodo> arvoresLocal(Arvores);
-	vector<Item> itensLocal(Itens);
 	//remove itens da arvore
 	for (int i=0; i< itensParaAlterar.size(); i++) 
 	{
@@ -504,53 +469,61 @@ bool Perturbacao(double porcentagemDePerturbacao)
 	}
 	//recoloca itens na arvore
 	GerenciaProcessoDeAdicaoDeItens(itensParaAlterar, arvoresLocal, itensLocal);
+}
 
-	double solucaoAtual = AvaliaSolucao(Arvores, 2);
-	double novaSolucao = AvaliaSolucao(arvoresLocal, 2);
+void BuscaLocal(vector<Nodo> &arvoresLocal,vector<Item> &itensLocal) 
+{
+	int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
 
-	if (solucaoAtual < novaSolucao)
+	switch (operacao)
 	{
-		Arvores = arvoresLocal;
-		Itens = itensLocal;
-		return true;
+	case 0:
+		ItemShuffle(arvoresLocal,itensLocal);
+		break;
+	case 1:
+		BinShake(arvoresLocal, itensLocal);
+		break;
+	case 2:
+		ItemShuffle(arvoresLocal, itensLocal);
+		break;
 	}
+}
 
+bool HouveMelhora(vector<Nodo> novaSolucao, vector<Nodo> solucaoAtual, int k)
+{
+	double resultadoDaNovaSolucao = AvaliaSolucao(novaSolucao,k);
+	double resultadoDaSolucaoAtual = AvaliaSolucao(solucaoAtual,k);
+
+	if (resultadoDaNovaSolucao > resultadoDaSolucaoAtual)
+		return true;
 	return false;
 }
 
-void Heuristica(int numeroDeIteracoes, double perturbacao = 0)
+void Heuristica(int numeroDeIteracoes, double porcentagemDePerturbacao, int k)
 {
 	int cont = 0;
+	BuscaLocal(Arvores, Itens);
 	while (cont < numeroDeIteracoes) {
-		int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
-		bool houveMelhora = false;
+		vector<Nodo> arvoresLocal(Arvores);
+		vector<Item> itensLocal(Itens);
 
-		switch (operacao)
-		{
-		case 0:
-			houveMelhora = ItemShuffle();
-			break;
-		case 1:
-			houveMelhora = BinShake();
-			break;
-		case 2:
-			houveMelhora = ItemShuffle();
-			break;
-		}
+		if(cont > 0)
+			Perturbacao(arvoresLocal, itensLocal, porcentagemDePerturbacao);
+		BuscaLocal(arvoresLocal, itensLocal);
 
-		if (!houveMelhora) 
+		bool houveMelhora = HouveMelhora(arvoresLocal, Arvores, k);
+
+		if (houveMelhora) 
 		{
-			houveMelhora = Perturbacao(perturbacao);
-			if (houveMelhora) {
-				cont = 0;
-				continue;
-			}
-			cont++;
-			//cout << "gerou melhora"<<endl;
-		}
-		else
+			Arvores = arvoresLocal;
+			Itens = itensLocal;
 			cont = 0;
-		cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << "\t cont:" << cont << endl;
+		}
+		else {
+			cont++;
+		}
+
+		//cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << "\t cont:" << cont << endl;
 	}
 }
 
@@ -587,12 +560,17 @@ int main()
 	srand(time(NULL));
 
 	ifstream base_file("base\\CLASS01_020_01.json", ifstream::binary);
+	//ifstream base_file("base\\CLASS01_100_10.json", ifstream::binary);
+	//ifstream base_file("base\\CLASS10_100_10.json", ifstream::binary);
 
 	Json::Value dadosDoJson;
 	base_file >> dadosDoJson;
 
 	converteDeJsonParaObjeto(dadosDoJson["Items"], true);
 	converteDeJsonParaObjeto(dadosDoJson["Objects"], false);
+
+	
+	//random_shuffle(Itens.begin(), Itens.end()); //randomiza lista de itens (uma ideia pra garantir a aleatoriedade ja que vai ficar alguns itens iguais em sequencia)
 
 	vector<Item> itensFaltantes = Itens;
 
@@ -601,13 +579,14 @@ int main()
 
 	//avalia o tempo da heuristica
 	auto start = chrono::steady_clock::now();
-	Heuristica(300, 0.15);
+	Heuristica(300, 0.1, 2);
 	auto end = chrono::steady_clock::now();
 	auto elapsed = end - start;
 
 	cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << endl;
 
 	cout << ((double)elapsed.count()/ 1000000000) << "s\n";
+
 
 	return 0;
 }
