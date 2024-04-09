@@ -424,15 +424,20 @@ void BinShake(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 	}
 }
 
-void BinDelete() 
+void BinDelete(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
 	//escolher um recipiente para remover os itens e realocar todos eles em outros..
-	int indexDoRecipienteParaRemover;
+	int indexDoRecipienteParaRemover = rand() % arvoresLocal.size();
 	//salvar em uma lista todos os itens que estão naquele recipiente e precisam ser realocados. == ja estao direto na lista de itens com o index.
+	vector<Item> itensDaArvore;
 
-	//gerenciaAdicaoDeItens
+	for(int i=0; i< itensLocal.size(); i++)
+		if (itensLocal[i].IndexDaArvore == indexDoRecipienteParaRemover)
+			itensDaArvore.push_back(itensLocal[i]);
 
-	//checa se houve melhora.
+	arvoresLocal.erase(arvoresLocal.begin() + indexDoRecipienteParaRemover);
+
+	GerenciaProcessoDeAdicaoDeItens(itensDaArvore, arvoresLocal, itensLocal);
 }
 
 bool Existe(vector<Item> itensParaAlterar, Item novoItem) 
@@ -451,6 +456,8 @@ void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double po
 
 	int numeroDeItensParaAlterar = round(totalDeItens * porcentagemDePerturbacao);
 
+	if (numeroDeItensParaAlterar == 0)
+		return;
 	vector<Item> itensParaAlterar;
 	for (int i = 0; i < numeroDeItensParaAlterar; i++) 
 	{
@@ -484,7 +491,7 @@ void BuscaLocal(vector<Nodo> &arvoresLocal,vector<Item> &itensLocal)
 		BinShake(arvoresLocal, itensLocal);
 		break;
 	case 2:
-		ItemShuffle(arvoresLocal, itensLocal);
+		BinDelete(arvoresLocal, itensLocal);
 		break;
 	}
 }
@@ -559,9 +566,9 @@ int main()
 {
 	srand(time(NULL));
 
-	ifstream base_file("base\\CLASS01_020_01.json", ifstream::binary);
+	//ifstream base_file("base\\CLASS01_020_01.json", ifstream::binary);
 	//ifstream base_file("base\\CLASS01_100_10.json", ifstream::binary);
-	//ifstream base_file("base\\CLASS10_100_10.json", ifstream::binary);
+	ifstream base_file("base\\CLASS10_100_10.json", ifstream::binary);
 
 	Json::Value dadosDoJson;
 	base_file >> dadosDoJson;
@@ -579,7 +586,7 @@ int main()
 
 	//avalia o tempo da heuristica
 	auto start = chrono::steady_clock::now();
-	Heuristica(300, 0.1, 2);
+	Heuristica(150, 0.0, 2);
 	auto end = chrono::steady_clock::now();
 	auto elapsed = end - start;
 
