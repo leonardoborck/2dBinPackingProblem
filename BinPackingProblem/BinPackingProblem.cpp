@@ -506,7 +506,7 @@ bool HouveMelhora(vector<Nodo> novaSolucao, vector<Nodo> solucaoAtual, int k)
 	return false;
 }
 
-void Heuristica(int numeroDeIteracoes, double porcentagemDePerturbacao, int k)
+void BuscaLocalIterada(int numeroDeIteracoes, double porcentagemDePerturbacao, int k)
 {
 	int cont = 0;
 	BuscaLocal(Arvores, Itens);
@@ -586,7 +586,7 @@ int main()
 
 	//avalia o tempo da heuristica
 	auto start = chrono::steady_clock::now();
-	Heuristica(150, 0.0, 2);
+	BuscaLocalIterada(150, 0.0, 2);
 	auto end = chrono::steady_clock::now();
 	auto elapsed = end - start;
 
