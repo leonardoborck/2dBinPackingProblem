@@ -12,6 +12,7 @@ public:
 	int Demand;
 	int Value;
 	int Reference;
+	int IndexDaArvore;
 
 	Item(int height, int length, int demand, int value, int reference);
 };
