@@ -134,6 +134,8 @@
     <ClCompile Include="classes\Item.cpp" />
     <ClCompile Include="classes\Nodo.cpp" />
     <ClCompile Include="classes\Recipiente.cpp" />
+    <ClCompile Include="Crow.cpp" />
+    <ClCompile Include="CrowSearch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="classes\Item.h" />
@@ -141,6 +143,7 @@
     <ClInclude Include="classes\Recipiente.h" />
     <ClInclude Include="classes\TipoDeNodo.h" />
     <ClInclude Include="classes\TipoOrientacao.h" />
+    <ClInclude Include="Crow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

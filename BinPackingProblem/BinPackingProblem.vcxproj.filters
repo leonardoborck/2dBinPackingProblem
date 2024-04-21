@@ -30,6 +30,12 @@
     <ClCompile Include="BinPackingProblem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CrowSearch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="classes\Item.h">
@@ -45,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="classes\TipoOrientacao.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
