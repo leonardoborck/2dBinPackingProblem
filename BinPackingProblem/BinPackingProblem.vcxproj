@@ -144,6 +144,7 @@
     <ClInclude Include="classes\TipoDeNodo.h" />
     <ClInclude Include="classes\TipoOrientacao.h" />
     <ClInclude Include="Crow.h" />
+    <ClInclude Include="CrowSearch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,6 @@
+1 execução
+z = 2
+fs = 2
+ap = 0.1
+maxIteration = 1;
+flocksize = 50;

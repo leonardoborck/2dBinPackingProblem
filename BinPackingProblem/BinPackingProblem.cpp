@@ -20,6 +20,10 @@ vector<Item> Itens;
 vector<Recipiente> Recipientes;
 vector<Nodo> Arvores;
 
+vector<Item> ItensOri;
+vector<Recipiente> RecipientesOri;
+vector<Nodo> ArvoresOri;
+
 void converteDeJsonParaObjeto(Json::Value dadosDoJson, bool ehConversaoDeItem)
 {
 	int codigoDoItem = 1;
@@ -29,7 +33,7 @@ void converteDeJsonParaObjeto(Json::Value dadosDoJson, bool ehConversaoDeItem)
 		if (ehConversaoDeItem)
 		{
 			int demand = objeto["Demand"].asInt64();
-			for (int i = 0; i < demand; i++) 
+			for (int i = 0; i < demand; i++)
 			{
 				Item novoItem(objeto["Height"].asInt64(), objeto["Length"].asInt64(), demand, objeto["Value"].asInt64(), codigoDoItem);
 				Itens.push_back(novoItem);
@@ -158,7 +162,7 @@ bool AdicionaItem(Item itemEscolhido, Nodo& raizAtual, Nodo& raizAnterior)
 	return false;
 }
 
-void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, vector<Item> &itens, int indexDaArvore = -1)
+void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, vector<Item>& itens, int indexDaArvore = -1)
 {
 	for (int i = 0; i < itens.size(); i++)
 		if (itens[i].Reference == codigoDoItem)
@@ -166,7 +170,7 @@ void AjustaIndexDaArvoreNoItemAdicionado(int codigoDoItem, vector<Item> &itens, 
 }
 
 
-void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes, vector<Nodo> &arvoresLocal, vector<Item> &itensLocal)
+void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes, vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
 	int alturaDoRecipiente = Recipientes[0].Height;
 	int larguraDoRecipiente = Recipientes[0].Height;
@@ -187,7 +191,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes, vector<Nodo> 
 			if (AdicionaItem(itemEscolhido, arvoresLocal[i], arvoresLocal[i])) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
 				adicionou = true;
-				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, itensLocal ,i);
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, itensLocal, i);
 				break;
 			}
 		}
@@ -198,7 +202,7 @@ void GerenciaProcessoDeAdicaoDeItens(vector<Item>& itensFaltantes, vector<Nodo> 
 
 			if (AdicionaItem(itemEscolhido, novaArvore, novaArvore)) {
 				itensFaltantes.erase(itensFaltantes.begin() + indexDoItem);
-				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, itensLocal , arvoresLocal.size());
+				AjustaIndexDaArvoreNoItemAdicionado(itemEscolhido.Reference, itensLocal, arvoresLocal.size());
 			}
 
 			arvoresLocal.push_back(novaArvore);
@@ -261,7 +265,7 @@ void AjustaArvoreAposARemocao(Nodo& raiz)
 
 }
 
-bool RemoveItem(int codigoDoItem, Nodo& raizAtual, vector<Item> &itens) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
+bool RemoveItem(int codigoDoItem, Nodo& raizAtual, vector<Item>& itens) //fazer remoção em 2 etapas, primeiro tranforma esse item em resto e depois normaliza a arvore
 {
 	if (raizAtual.Children.empty() && raizAtual.CodigoDoItem == codigoDoItem)
 	{
@@ -373,13 +377,13 @@ void ItemShuffle(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 }
 
 
-void ObtemAPosicaoDosItensDaArvoreNaListaDeItensArvore(Nodo raiz, vector<int> &posicaoDosItens) 
+void ObtemAPosicaoDosItensDaArvoreNaListaDeItensArvore(Nodo raiz, vector<int>& posicaoDosItens)
 {
 	if (raiz.Type == TipoDeNodo::Item)
 	{
-		for (int i = 0; i < Itens.size(); i++) 
+		for (int i = 0; i < Itens.size(); i++)
 		{
-			if(Itens[i].Reference == raiz.CodigoDoItem)
+			if (Itens[i].Reference == raiz.CodigoDoItem)
 				posicaoDosItens.push_back(i);
 		}
 	}
@@ -424,25 +428,94 @@ void BinShake(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 	}
 }
 
+//PRA DEBUGAR
+vector<int> itensRep;
+void VerificaSeTemItensRepetidos(Nodo raizAtual)
+{
+	if (raizAtual.Type == TipoDeNodo::Item)
+	{
+		itensRep.push_back(raizAtual.CodigoDoItem);
+	}
+	else
+	{
+		int valor = 0;
+		for (int i = 0; i < raizAtual.Children.size(); i++)
+		{
+			VerificaSeTemItensRepetidos(raizAtual.Children[i]);
+		}
+
+	}
+}
+
+void Checa(vector<Nodo>arvores)
+{
+	itensRep.clear();
+	for (Nodo arvore : arvores)
+	{
+		VerificaSeTemItensRepetidos(arvore);
+	}
+}
+
+void Corrige(Nodo raizAtual, vector<Item>& itensLocal, int indice) {
+	if (raizAtual.Type == TipoDeNodo::Item)
+	{
+		for (int i = 0; i < Itens.size(); i++) {
+			if (raizAtual.CodigoDoItem == itensLocal[i].Reference) {
+				itensLocal[i].IndexDaArvore = indice;
+				return;
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < raizAtual.Children.size(); i++)
+		{
+			Corrige(raizAtual.Children[i], itensLocal, indice);
+		}
+
+	}
+}
+
+void CorrigeIndiceDasArvoresNosItens(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal) {
+	for (int i = 0; i < arvoresLocal.size(); i++) {
+		Corrige(arvoresLocal[i], itensLocal, i);
+	}
+}
+
+int AchaIndiceDaArvoreMenosUtilizada(vector<Nodo> arvoresLocal) {
+	double menorvalor = 0;
+	int indiceDaArvore = 0;
+	for (int i = 0; i < arvoresLocal.size(); i++) {
+		double utilizacao = VerificaUtilizacaoDaArvore(arvoresLocal[i]);
+		if (utilizacao > menorvalor)
+			indiceDaArvore = i;
+	}
+	return indiceDaArvore;
+}
 void BinDelete(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
 	//escolher um recipiente para remover os itens e realocar todos eles em outros..
 	int indexDoRecipienteParaRemover = rand() % arvoresLocal.size();
+	//int indexDoRecipienteParaRemover = AchaIndiceDaArvoreMenosUtilizada(arvoresLocal);
 	//salvar em uma lista todos os itens que estão naquele recipiente e precisam ser realocados. == ja estao direto na lista de itens com o index.
-	vector<Item> itensDaArvore;
+	vector<int> indexDosItensDaArvore;
+	ObtemAPosicaoDosItensDaArvoreNaListaDeItensArvore(arvoresLocal[indexDoRecipienteParaRemover], indexDosItensDaArvore);
 
-	for(int i=0; i< itensLocal.size(); i++)
-		if (itensLocal[i].IndexDaArvore == indexDoRecipienteParaRemover)
-			itensDaArvore.push_back(itensLocal[i]);
+	vector<Item> itensDaArvore;
+	for (int i = 0; i < indexDosItensDaArvore.size(); i++)
+		itensDaArvore.push_back(itensLocal[indexDosItensDaArvore[i]]);
 
 	arvoresLocal.erase(arvoresLocal.begin() + indexDoRecipienteParaRemover);
 
-	GerenciaProcessoDeAdicaoDeItens(itensDaArvore, arvoresLocal, itensLocal);
+	CorrigeIndiceDasArvoresNosItens(arvoresLocal, itensLocal);
+
+	if (!itensDaArvore.empty())
+		GerenciaProcessoDeAdicaoDeItens(itensDaArvore, arvoresLocal, itensLocal);
 }
 
-bool Existe(vector<Item> itensParaAlterar, Item novoItem) 
+bool Existe(vector<Item> itensParaAlterar, Item novoItem)
 {
-	for (int i = 0; i < itensParaAlterar.size(); i++) 
+	for (int i = 0; i < itensParaAlterar.size(); i++)
 	{
 		if (itensParaAlterar[i].Reference == novoItem.Reference)
 			return true;
@@ -450,7 +523,7 @@ bool Existe(vector<Item> itensParaAlterar, Item novoItem)
 	return false;
 }
 
-void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double porcentagemDePerturbacao) 
+void Perturbacao(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal, double porcentagemDePerturbacao)
 {
 	int totalDeItens = Itens.size();
 
@@ -459,7 +532,7 @@ void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double po
 	if (numeroDeItensParaAlterar == 0)
 		return;
 	vector<Item> itensParaAlterar;
-	for (int i = 0; i < numeroDeItensParaAlterar; i++) 
+	for (int i = 0; i < numeroDeItensParaAlterar; i++)
 	{
 		int indexDoItemParaAlterar = rand() % totalDeItens;
 
@@ -469,7 +542,7 @@ void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double po
 		itensParaAlterar.push_back(Itens[indexDoItemParaAlterar]);
 	}
 	//remove itens da arvore
-	for (int i=0; i< itensParaAlterar.size(); i++) 
+	for (int i = 0; i < itensParaAlterar.size(); i++)
 	{
 		int indexDaArvore = itensParaAlterar[i].IndexDaArvore;
 		RemoveItem(itensParaAlterar[i].Reference, arvoresLocal[indexDaArvore], itensLocal);
@@ -478,14 +551,14 @@ void Perturbacao(vector<Nodo> &arvoresLocal, vector<Item> &itensLocal, double po
 	GerenciaProcessoDeAdicaoDeItens(itensParaAlterar, arvoresLocal, itensLocal);
 }
 
-void BuscaLocal(vector<Nodo> &arvoresLocal,vector<Item> &itensLocal) 
+void BuscaLocal(vector<Nodo>& arvoresLocal, vector<Item>& itensLocal)
 {
 	int operacao = rand() % 3; // saber operação 0 - Item-Shuffle - 1 - Bin-Shake - 2 Mistura
 
 	switch (operacao)
 	{
 	case 0:
-		ItemShuffle(arvoresLocal,itensLocal);
+		ItemShuffle(arvoresLocal, itensLocal);
 		break;
 	case 1:
 		BinShake(arvoresLocal, itensLocal);
@@ -498,8 +571,8 @@ void BuscaLocal(vector<Nodo> &arvoresLocal,vector<Item> &itensLocal)
 
 bool HouveMelhora(vector<Nodo> novaSolucao, vector<Nodo> solucaoAtual, int k)
 {
-	double resultadoDaNovaSolucao = AvaliaSolucao(novaSolucao,k);
-	double resultadoDaSolucaoAtual = AvaliaSolucao(solucaoAtual,k);
+	double resultadoDaNovaSolucao = AvaliaSolucao(novaSolucao, k);
+	double resultadoDaSolucaoAtual = AvaliaSolucao(solucaoAtual, k);
 
 	if (resultadoDaNovaSolucao > resultadoDaSolucaoAtual)
 		return true;
@@ -514,13 +587,12 @@ void BuscaLocalIterada(int numeroDeIteracoes, double porcentagemDePerturbacao, i
 		vector<Nodo> arvoresLocal(Arvores);
 		vector<Item> itensLocal(Itens);
 
-		if(cont > 0)
+		if (cont > 0)
 			Perturbacao(arvoresLocal, itensLocal, porcentagemDePerturbacao);
 		BuscaLocal(arvoresLocal, itensLocal);
-
 		bool houveMelhora = HouveMelhora(arvoresLocal, Arvores, k);
 
-		if (houveMelhora) 
+		if (houveMelhora)
 		{
 			Arvores = arvoresLocal;
 			Itens = itensLocal;
@@ -530,70 +602,123 @@ void BuscaLocalIterada(int numeroDeIteracoes, double porcentagemDePerturbacao, i
 			cont++;
 		}
 
-		//cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << "\t cont:" << cont << endl;
+		// cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << "\t cont:" << cont << endl;
 	}
 }
 
-//PRA DEBUGAR
-//vector<int> itensRep;
-//void VerificaSeTemItensRepetidos(Nodo raizAtual)
-//{
-//	if (raizAtual.Type == TipoDeNodo::Item)
-//	{
-//		itensRep.push_back(raizAtual.CodigoDoItem);
-//	}
-//	else
-//	{
-//		int valor = 0;
-//		for (int i = 0; i < raizAtual.Children.size(); i++)
-//		{
-//			VerificaSeTemItensRepetidos(raizAtual.Children[i]);
-//		}
-//
-//	}
-//}
-//
-//void Checa(vector<Nodo>arvores) 
-//{
-//	for (Nodo arvore : arvores)
-//	{
-//		VerificaSeTemItensRepetidos(arvore);
-//	}
-//}
-
 #include <algorithm>
+#include<stdio.h>
+#include<stdlib.h>
+#include "CrowSearch.h"
+
+void CriaArquivoDeTextoCrowSearch(int numeroDoTeste, Crow corvo, double tempo, ofstream& arq, string nome, int maxIteration) {
+	arq << "Arquivo," << nome << endl;
+	arq << "Execucao," << numeroDoTeste << endl;
+	arq << "MaxIteration," << maxIteration << endl;
+	arq << "Tempo Decorrido (segundos)," << tempo << endl;
+	arq << "Porcentagem De Utilizacao," << corvo.AvaliacaoDaMelhorSolucao << endl;
+	arq << "Quantidade de Recipientes," << corvo.MelhorMemoria[0].size() << endl;
+
+	/*for (int j = 0; j < corvo.MelhorMemoria.size(); j++) {
+		for (int k = 0; k < corvo.MelhorMemoria[j].size(); k++) {
+			if (k == corvo.MelhorMemoria[j].size() - 1)
+				arq << corvo.MelhorMemoria[j][k];
+			else
+				arq << corvo.MelhorMemoria[j][k] << ",";
+		}
+		arq << endl;
+	}*/
+}
+
+void CriaArquivoDeTextoBuscaLocalIterada(int numeroDoTeste, double tempo, ofstream& arq) {
+	arq << "Execucao," << numeroDoTeste << endl;
+	arq << "Tempo Decorrido (segundos)," << tempo << endl;
+	arq << "Porcentagem De Utilizacao," << AvaliaSolucao(Arvores, 2) << endl << endl;
+	arq << "Quantidade de Recipientes," << Arvores.size() << endl;
+}
+
+//#include <mutex>
+//std::mutex file_mutex;
+
+void CrowSearch(int repeticoes, ofstream& arq, string nome)
+{
+	for (int i = 0; i < repeticoes; i++) {
+		vector<int> max = { 1, 20, 50, 80, 100 };
+			for (int m = 0; m < max.size(); m++) {
+			arq << "Busca do Corvo" << endl;
+			int z = 2;
+			int flightsize = 2;
+			double AP = 0.1;
+			int flocksize = 50;
+			CarregaVariaveis(Itens, Recipientes);
+			InicializaCorvos(flocksize, z);
+			auto start = chrono::steady_clock::now();
+			Crow corvo = CrowSearch(flightsize, AP, z, m);
+			auto end = chrono::steady_clock::now();
+			auto elapsed = end - start;
+			double tempo = ((double)elapsed.count() / 1000000000);
+			CriaArquivoDeTextoCrowSearch(i, corvo, tempo, arq, nome, m);
+		}
+	}
+}
+
+void IteratedLocalSearch(int repeticao) {
+	ofstream arq("execucaoILS.csv");
+	if (arq.is_open())
+	{
+		double perturbacao = 0.0;
+		int z = 2;
+		int maxIteracoes = 150;
+
+		for (int i = 0; i < repeticao; i++) {
+			Recipientes = RecipientesOri;
+			Itens = ItensOri;
+			Arvores = ArvoresOri;
+			vector<Item> itensFaltantes = Itens;
+			GerenciaProcessoDeAdicaoDeItens(itensFaltantes, Arvores, Itens);
+			auto start = chrono::steady_clock::now();
+			BuscaLocalIterada(maxIteracoes, perturbacao, z);
+
+			auto end = chrono::steady_clock::now();
+			auto elapsed = end - start;
+			double tempo = ((double)elapsed.count() / 1000000000);
+			CriaArquivoDeTextoBuscaLocalIterada(i, tempo, arq);
+		}
+		arq.close();
+	}
+}
+
 int main()
 {
 	srand(time(NULL));
 
-	//ifstream base_file("base\\CLASS01_020_01.json", ifstream::binary);
-	//ifstream base_file("base\\CLASS01_100_10.json", ifstream::binary);
-	ifstream base_file("base\\CLASS10_100_10.json", ifstream::binary);
+	string classe = "CLASS01";
+	vector<string> numeroDeItens = { "020","040" ,"060" ,"080" ,"100" };
+	vector<string> instancia = { "01","02", "03", "04", "05", "06", "07", "08", "09", "10" };
 
-	Json::Value dadosDoJson;
-	base_file >> dadosDoJson;
+	ofstream arqbcsa("execucaoBCSA.csv");
+	if (arqbcsa.is_open())
+	{
+		for (int n = 0; n < numeroDeItens.size(); n++) {
+			for (int i = 0; i < instancia.size(); i++) {
 
-	converteDeJsonParaObjeto(dadosDoJson["Items"], true);
-	converteDeJsonParaObjeto(dadosDoJson["Objects"], false);
+				Itens.clear();
+				Arvores.clear();
+				Recipientes.clear();
 
-	
-	//random_shuffle(Itens.begin(), Itens.end()); //randomiza lista de itens (uma ideia pra garantir a aleatoriedade ja que vai ficar alguns itens iguais em sequencia)
+				string nome = "base\\" + classe + "_" + numeroDeItens[n] + "_" + instancia[i] + ".json";
+				ifstream base_file(nome, ifstream::binary);
+				Json::Value dadosDoJson;
+				base_file >> dadosDoJson;
 
-	vector<Item> itensFaltantes = Itens;
+				converteDeJsonParaObjeto(dadosDoJson["Items"], true);
+				converteDeJsonParaObjeto(dadosDoJson["Objects"], false);
 
-	GerenciaProcessoDeAdicaoDeItens(itensFaltantes, Arvores, Itens);
-	cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << endl;
-
-	//avalia o tempo da heuristica
-	auto start = chrono::steady_clock::now();
-	BuscaLocalIterada(150, 0.0, 2);
-	auto end = chrono::steady_clock::now();
-	auto elapsed = end - start;
-
-	cout << "utilizacao: " << AvaliaSolucao(Arvores, 2) << endl;
-
-	cout << ((double)elapsed.count()/ 1000000000) << "s\n";
-
+				CrowSearch(10, arqbcsa, nome);
+			}
+		}
+	}
+	arqbcsa.close();
 
 	return 0;
 }
